@@ -576,6 +576,14 @@
         if (navigator.vibrate) navigator.vibrate(30);
       };
 
+      let lastAutomaticAdd = 0;
+      const addOneFromAppLaunch = () => {
+        const now = Date.now();
+        if (now - lastAutomaticAdd < 1500) return;
+        lastAutomaticAdd = now;
+        addOne(true);
+      };
+
       document.getElementById("addButton").addEventListener("click", () => addOne());
       document.getElementById("newPromptButton").addEventListener("click", () => setPrompt(true));
 
@@ -642,9 +650,24 @@
       render();
 
       const params = new URLSearchParams(location.search);
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true;
+
+      if (params.get("add") === "1" || isStandalone) {
+        addOneFromAppLaunch();
+      }
+
       if (params.get("add") === "1") {
-        addOne(true);
         history.replaceState({}, "", location.pathname + location.hash);
+      }
+
+      if (isStandalone) {
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") {
+            addOneFromAppLaunch();
+          }
+        });
       }
     })();
   </script>

@@ -2,7 +2,7 @@
   "name": "Stop & Pray",
   "short_name": "Stop & Pray",
   "description": "A simple, private daily prayer tally and prompt companion.",
-  "start_url": "./",
+  "start_url": "./?add=1",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f0f3ee",
