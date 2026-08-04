@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#24352f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Stop & Pray">
+  <title>Stop & Pray</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f2e9;
+      --panel: #fffdf7;
+      --text: #1e2925;
+      --muted: #67736e;
+      --accent: #315f50;
+      --accent-2: #dfe9e3;
+      --border: #d9ddd9;
+      --danger: #8b3a3a;
+      --today: #eadfc7;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121916;
+        --panel: #1b2521;
+        --text: #eef4f0;
+        --muted: #aebbb5;
+        --accent: #8ab8a5;
+        --accent-2: #263a32;
+        --border: #35443e;
+        --danger: #e09a9a;
+        --today: #3c3528;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100svh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: max(24px, env(safe-area-inset-top)) 18px max(32px, env(safe-area-inset-bottom));
+    }
+    main {
+      width: min(100%, 520px);
+      margin: 0 auto;
+      text-align: center;
+    }
+    .cross {
+      font-family: Georgia, serif;
+      font-size: 32px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    h1 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(32px, 9vw, 46px);
+      margin: 0;
+      font-weight: 600;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 20px;
+      text-align: left;
+    }
+    .date {
+      color: var(--muted);
+      margin: 8px 0 22px;
+      font-size: 17px;
+    }
+    .panel, .section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      padding: 24px 20px 20px;
+    }
+    .section {
+      margin-top: 16px;
+      text-align: left;
+    }
+    .label {
+      color: var(--muted);
+      font-size: 16px;
+    }
+    .count {
+      font-size: clamp(74px, 24vw, 112px);
+      line-height: 1;
+      font-weight: 700;
+      margin: 8px 0 4px;
+      font-variant-numeric: tabular-nums;
+    }
+    .goal-line {
+      color: var(--muted);
+      margin-bottom: 18px;
+      min-height: 24px;
+    }
+    .progress {
+      height: 10px;
+      background: var(--accent-2);
+      border-radius: 99px;
+      overflow: hidden;
+      margin: 0 6px 22px;
+    }
+    .progress > div {
+      height: 100%;
+      width: 0;
+      background: var(--accent);
+      border-radius: inherit;
+      transition: width .25s ease;
+    }
+    button {
+      font: inherit;
+      border-radius: 17px;
+      border: 1px solid var(--border);
+      min-height: 52px;
+      cursor: pointer;
+    }
+    .add {
+      width: 100%;
+      min-height: 80px;
+      border: 0;
+      background: var(--accent);
+      color: white;
+      font-size: 23px;
+      font-weight: 650;
+      box-shadow: 0 5px 14px rgba(0,0,0,.12);
+    }
+    @media (prefers-color-scheme: dark) {
+      .add { color: #102019; }
+    }
+    .add:active { transform: scale(.985); }
+    .secondary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .secondary button, .prompt-button {
+      background: transparent;
+      color: var(--text);
+    }
+    .message {
+      min-height: 24px;
+      margin: 10px 0 0;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .prompt {
+      margin: 16px 0 2px;
+      padding: 17px;
+      border-radius: 18px;
+      background: var(--accent-2);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 19px;
+      line-height: 1.45;
+      min-height: 84px;
+      display: grid;
+      place-items: center;
+    }
+    .prompt-button {
+      width: 100%;
+      margin-top: 10px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 9px;
+      margin-top: 16px;
+    }
+    .stat {
+      background: var(--accent-2);
+      border-radius: 16px;
+      padding: 13px 5px;
+    }
+    .stat strong {
+      display: block;
+      font-size: 23px;
+    }
+    .stat span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .calendar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .calendar-head button {
+      min-height: 42px;
+      min-width: 44px;
+      background: transparent;
+      color: var(--text);
+    }
+    .month-title {
+      font-weight: 650;
+      text-align: center;
+    }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .weekday {
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+      padding-bottom: 4px;
+    }
+    .day {
+      aspect-ratio: 1;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 6px;
+      font-size: 12px;
+      background: transparent;
+    }
+    .day.empty {
+      border-color: transparent;
+    }
+    .day.today {
+      background: var(--today);
+    }
+    .day.goal-met {
+      border-color: var(--accent);
+    }
+    .day-num {
+      color: var(--muted);
+    }
+    .day-count {
+      align-self: center;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    details {
+      margin-top: 16px;
+      text-align: left;
+      color: var(--muted);
+    }
+    summary {
+      cursor: pointer;
+      text-align: center;
+      padding: 8px;
+    }
+    .settings {
+      padding: 10px 4px 0;
+    }
+    .settings label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    input[type="number"] {
+      width: 90px;
+      font: inherit;
+      font-size: 18px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel);
+      color: var(--text);
+    }
+    .reset {
+      width: 100%;
+      margin-top: 12px;
+      background: transparent;
+      color: var(--danger);
+    }
+    .verse {
+      margin: 22px 14px 0;
+      color: var(--muted);
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      line-height: 1.45;
+    }
+    .small-note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="cross" aria-hidden="true">✝</div>
+    <h1>Stop &amp; Pray</h1>
+    <div class="date" id="date"></div>
+
+    <section class="panel" aria-label="Prayer tally">
+      <div class="label">Today’s tally</div>
+      <div class="count" id="count" aria-live="polite">0</div>
+      <div class="goal-line" id="goalLine"></div>
+      <div class="progress" aria-hidden="true"><div id="progressBar"></div></div>
+
+      <button class="add" id="addButton" type="button">+ I stopped and prayed</button>
+
+      <div class="prompt" id="prompt" aria-live="polite"></div>
+      <button class="prompt-button" id="newPromptButton" type="button">Show another prayer prompt</button>
+
+      <div class="secondary">
+        <button id="undoButton" type="button">Undo last</button>
+        <button id="copyButton" type="button">Copy summary</button>
+      </div>
+
+      <div class="message" id="message" aria-live="polite"></div>
+
+      <div class="stats">
+        <div class="stat">
+          <strong id="weekTotal">0</strong>
+          <span>Last 7 days</span>
+        </div>
+        <div class="stat">
+          <strong id="streak">0</strong>
+          <span>Goal streak</span>
+        </div>
+        <div class="stat">
+          <strong id="allTotal">0</strong>
+          <span>All time</span>
+        </div>
+      </div>
+
+      <details>
+        <summary>Settings</summary>
+        <div class="settings">
+          <label for="goal">
+            Daily goal
+            <input id="goal" type="number" min="1" max="100" inputmode="numeric">
+          </label>
+          <button class="reset" id="resetTodayButton" type="button">Reset today’s tally</button>
+          <button class="reset" id="resetAllButton" type="button">Erase all history</button>
+        </div>
+      </details>
+    </section>
+
+    <section class="section">
+      <div class="calendar-head">
+        <button id="prevMonth" type="button" aria-label="Previous month">‹</button>
+        <div class="month-title" id="monthTitle"></div>
+        <button id="nextMonth" type="button" aria-label="Next month">›</button>
+      </div>
+      <div class="calendar" id="calendar" aria-label="Monthly prayer history"></div>
+      <div class="small-note">A highlighted border means you reached your daily goal.</div>
+    </section>
+
+    <p class="verse">“Pray continually.” — 1 Thessalonians 5:17</p>
+  </main>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "stopAndPrayDataV1";
+      const prompts = [
+        "Jesus, here I am.",
+        "Father, I am yours.",
+        "Lord, help me notice what You are doing.",
+        "Jesus, give me wisdom for the next thing.",
+        "Father, bring someone to mind who needs prayer.",
+        "Lord, make me attentive to Your presence.",
+        "Jesus, I trust You with what I cannot control.",
+        "Father, thank You for one gift in this moment.",
+        "Lord, forgive me and make my heart clean.",
+        "Jesus, give peace to someone who is hurting.",
+        "Father, lead me in love today.",
+        "Lord, help me listen before I speak.",
+        "Jesus, strengthen someone who feels weary.",
+        "Father, use me to bring Your peace.",
+        "Lord, show me where I need to surrender.",
+        "Jesus, have mercy.",
+        "Father, let Your kingdom come here.",
+        "Lord, keep me faithful in small things."
+      ];
+
+      const dateKey = (date = new Date()) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      };
+
+      const load = () => {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+          if (parsed && typeof parsed === "object") {
+            return {
+              goal: Number(parsed.goal) || 10,
+              days: parsed.days && typeof parsed.days === "object" ? parsed.days : {}
+            };
+          }
+        } catch (_) {}
+        return { goal: 10, days: {} };
+      };
+
+      let data = load();
+      let calendarDate = new Date();
+      calendarDate.setDate(1);
+      let currentPromptIndex = Math.floor(Math.random() * prompts.length);
+      let messageTimer;
+
+      const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      const currentCount = () => Number(data.days[dateKey()] || 0);
+
+      const showMessage = (text) => {
+        const el = document.getElementById("message");
+        el.textContent = text;
+        clearTimeout(messageTimer);
+        messageTimer = setTimeout(() => { el.textContent = ""; }, 1800);
+      };
+
+      const setPrompt = (randomize = true) => {
+        if (randomize) {
+          let next = currentPromptIndex;
+          while (prompts.length > 1 && next === currentPromptIndex) {
+            next = Math.floor(Math.random() * prompts.length);
+          }
+          currentPromptIndex = next;
+        }
+        document.getElementById("prompt").textContent = prompts[currentPromptIndex];
+      };
+
+      const calculateStreak = () => {
+        const goal = Math.max(1, Number(data.goal) || 10);
+        let streak = 0;
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+
+        if (Number(data.days[dateKey(d)] || 0) < goal) {
+          d.setDate(d.getDate() - 1);
+        }
+
+        while (Number(data.days[dateKey(d)] || 0) >= goal) {
+          streak += 1;
+          d.setDate(d.getDate() - 1);
+        }
+        return streak;
+      };
+
+      const renderCalendar = () => {
+        const calendar = document.getElementById("calendar");
+        calendar.innerHTML = "";
+        const weekdays = ["S", "M", "T", "W", "T", "F", "S"];
+        weekdays.forEach(day => {
+          const el = document.createElement("div");
+          el.className = "weekday";
+          el.textContent = day;
+          calendar.appendChild(el);
+        });
+
+        const year = calendarDate.getFullYear();
+        const month = calendarDate.getMonth();
+        document.getElementById("monthTitle").textContent =
+          new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" })
+            .format(calendarDate);
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) {
+          const empty = document.createElement("div");
+          empty.className = "day empty";
+          calendar.appendChild(empty);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const d = new Date(year, month, day);
+          const key = dateKey(d);
+          const count = Number(data.days[key] || 0);
+          const cell = document.createElement("div");
+          cell.className = "day";
+          if (key === dateKey()) cell.classList.add("today");
+          if (count >= data.goal) cell.classList.add("goal-met");
+
+          const number = document.createElement("span");
+          number.className = "day-num";
+          number.textContent = day;
+
+          const tally = document.createElement("span");
+          tally.className = "day-count";
+          tally.textContent = count || "";
+
+          cell.append(number, tally);
+          cell.setAttribute("aria-label", `${key}: ${count} prayer stops`);
+          calendar.appendChild(cell);
+        }
+      };
+
+      const render = () => {
+        const count = currentCount();
+        const goal = Math.max(1, Number(data.goal) || 10);
+
+        document.getElementById("date").textContent =
+          new Intl.DateTimeFormat(undefined, {
+            weekday: "long", month: "long", day: "numeric"
+          }).format(new Date());
+
+        document.getElementById("count").textContent = count;
+        document.getElementById("goal").value = goal;
+        document.getElementById("goalLine").textContent =
+          count >= goal ? `Daily goal reached — ${count} of ${goal}` : `${count} of ${goal} daily goal`;
+        document.getElementById("progressBar").style.width =
+          `${Math.min(100, (count / goal) * 100)}%`;
+
+        const entries = Object.entries(data.days);
+        document.getElementById("allTotal").textContent =
+          entries.reduce((sum, [, value]) => sum + Number(value || 0), 0);
+
+        const cutoff = new Date();
+        cutoff.setHours(0, 0, 0, 0);
+        cutoff.setDate(cutoff.getDate() - 6);
+
+        const weekTotal = entries.reduce((sum, [date, value]) => {
+          const [y, m, d] = date.split("-").map(Number);
+          const itemDate = new Date(y, m - 1, d);
+          return itemDate >= cutoff ? sum + Number(value || 0) : sum;
+        }, 0);
+
+        document.getElementById("weekTotal").textContent = weekTotal;
+        document.getElementById("streak").textContent = calculateStreak();
+        renderCalendar();
+      };
+
+      const addOne = (automatic = false) => {
+        const key = dateKey();
+        data.days[key] = currentCount() + 1;
+        save();
+        setPrompt(true);
+        render();
+        showMessage(automatic ? "Prayer added." : "Prayer added.");
+        if (navigator.vibrate) navigator.vibrate(30);
+      };
+
+      document.getElementById("addButton").addEventListener("click", () => addOne());
+      document.getElementById("newPromptButton").addEventListener("click", () => setPrompt(true));
+
+      document.getElementById("undoButton").addEventListener("click", () => {
+        const key = dateKey();
+        const count = currentCount();
+        if (count > 0) {
+          data.days[key] = count - 1;
+          save();
+          render();
+          showMessage("Last tally removed.");
+        } else {
+          showMessage("Nothing to undo.");
+        }
+      });
+
+      document.getElementById("goal").addEventListener("change", (event) => {
+        data.goal = Math.min(100, Math.max(1, Number(event.target.value) || 10));
+        save();
+        render();
+        showMessage("Daily goal updated.");
+      });
+
+      document.getElementById("resetTodayButton").addEventListener("click", () => {
+        if (confirm("Reset today’s tally to zero?")) {
+          data.days[dateKey()] = 0;
+          save();
+          render();
+          showMessage("Today reset.");
+        }
+      });
+
+      document.getElementById("resetAllButton").addEventListener("click", () => {
+        if (confirm("Erase every saved tally? This cannot be undone.")) {
+          data.days = {};
+          save();
+          render();
+          showMessage("History erased.");
+        }
+      });
+
+      document.getElementById("copyButton").addEventListener("click", async () => {
+        const total = Object.values(data.days).reduce((sum, value) => sum + Number(value || 0), 0);
+        const text = `Stop & Pray: ${currentCount()} prayer stops today, ${calculateStreak()}-day goal streak, ${total} all time.`;
+        try {
+          await navigator.clipboard.writeText(text);
+          showMessage("Summary copied.");
+        } catch (_) {
+          prompt("Copy this summary:", text);
+        }
+      });
+
+      document.getElementById("prevMonth").addEventListener("click", () => {
+        calendarDate.setMonth(calendarDate.getMonth() - 1);
+        renderCalendar();
+      });
+
+      document.getElementById("nextMonth").addEventListener("click", () => {
+        calendarDate.setMonth(calendarDate.getMonth() + 1);
+        renderCalendar();
+      });
+
+      setPrompt(false);
+      render();
+
+      const params = new URLSearchParams(location.search);
+      if (params.get("add") === "1") {
+        addOne(true);
+        history.replaceState({}, "", location.pathname + location.hash);
+      }
+    })();
+  </script>
+</body>
+</html>
