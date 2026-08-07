@@ -180,14 +180,7 @@
 
     .add:active { transform: scale(.985); filter: brightness(.96); }
 
-    .secondary {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .secondary button, .prompt-button, .save-prayer, .ghost {
+    .prompt-button, .ghost {
       background: transparent;
       color: var(--text);
     }
@@ -234,6 +227,23 @@
       font-weight: 400;
       font-size: 13px;
       margin-top: 2px;
+    }
+
+    .save-prayer {
+      width: 100%;
+      margin-top: 10px;
+      border-color: var(--accent);
+      background: var(--accent-2);
+      color: var(--accent-strong);
+      font-weight: 650;
+      transition: opacity .15s ease, transform .08s ease;
+    }
+
+    .save-prayer:active:not(:disabled) { transform: scale(.99); }
+
+    .save-prayer:disabled {
+      cursor: default;
+      opacity: .45;
     }
 
     textarea {
@@ -584,22 +594,18 @@
 
       <button class="add" id="addButton" type="button">+ I stopped and prayed</button>
 
-      <div class="prompt" id="prompt" aria-live="polite"></div>
-      <button class="prompt-button" id="newPromptButton" type="button">Show another prayer prompt</button>
-
       <div class="personal-prayer">
         <label for="prayerText">
-          My prayer <span class="hint">Optional — if you type something here, it will be saved with your next tally.</span>
+          Remember this prayer <span class="hint">Optional — save a few words from this moment.</span>
         </label>
         <textarea id="prayerText" maxlength="500" placeholder="A few words you want to remember…"></textarea>
-      </div>
-
-      <div class="secondary">
-        <button id="undoButton" type="button">Undo last</button>
-        <button id="copyButton" type="button">Copy summary</button>
+        <button class="save-prayer" id="savePrayerButton" type="button" disabled>💾 Save Prayer</button>
       </div>
 
       <div class="message" id="message" aria-live="polite"></div>
+
+      <div class="prompt" id="prompt" aria-live="polite"></div>
+      <button class="prompt-button" id="newPromptButton" type="button">Show another prayer prompt</button>
 
       <div class="stats">
         <div class="stat">
@@ -732,6 +738,8 @@
       let selectedDateKey = dateKey();
       let currentPromptIndex = Math.floor(Math.random() * prompts.length);
       let messageTimer;
+      let saveButtonTimer;
+      let pendingEntryId = null;
 
       const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       const currentCount = () => Number(data.days[dateKey()] || 0);
@@ -1041,47 +1049,82 @@
       const addOne = (automatic = false) => {
         const now = new Date();
         const key = dateKey(now);
-        const noteField = document.getElementById("prayerText");
-        const note = automatic ? "" : noteField.value.trim();
+        const entryId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
         data.days[key] = Number(data.days[key] || 0) + 1;
         if (!Array.isArray(data.entries[key])) data.entries[key] = [];
         data.entries[key].push({
-          id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          id: entryId,
           timestamp: now.toISOString(),
-          note
+          note: ""
         });
 
+        pendingEntryId = entryId;
         save();
-        if (!automatic) noteField.value = "";
         selectedDateKey = key;
         setPrompt(true);
         render();
-        showMessage(note ? "Prayer and note saved." : "Prayer recorded.");
+        showMessage("Prayer recorded.");
         if (navigator.vibrate) navigator.vibrate(30);
       };
 
       document.getElementById("addButton").addEventListener("click", () => addOne());
       document.getElementById("newPromptButton").addEventListener("click", () => setPrompt(true));
 
-      document.getElementById("undoButton").addEventListener("click", () => {
+      const prayerText = document.getElementById("prayerText");
+      const savePrayerButton = document.getElementById("savePrayerButton");
+
+      const updateSavePrayerButton = () => {
+        savePrayerButton.disabled = !prayerText.value.trim();
+      };
+
+      const savePrayer = () => {
+        const note = prayerText.value.trim();
+        if (!note) return;
+
+        const now = new Date();
         const key = dateKey();
-        const count = currentCount();
-        if (count <= 0) {
-          showMessage("Nothing to undo.");
-          return;
+        const list = entriesFor(key);
+        const pendingEntry = pendingEntryId
+          ? list.find(entry => entry.id === pendingEntryId && !entry.note)
+          : null;
+
+        if (pendingEntry) {
+          pendingEntry.note = note;
+        } else {
+          data.days[key] = Number(data.days[key] || 0) + 1;
+          if (!Array.isArray(data.entries[key])) data.entries[key] = [];
+          data.entries[key].push({
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            timestamp: now.toISOString(),
+            note
+          });
         }
 
-        const list = entriesFor(key);
-        if (list.length) {
-          data.entries[key] = list.slice(0, -1);
-        }
-        data.days[key] = count - 1;
+        pendingEntryId = null;
         save();
+        prayerText.value = "";
+        updateSavePrayerButton();
         selectedDateKey = key;
         render();
-        showMessage("Last tally removed.");
+        showMessage("Prayer saved.");
+
+        clearTimeout(saveButtonTimer);
+        savePrayerButton.textContent = "✓ Saved";
+        saveButtonTimer = setTimeout(() => {
+          savePrayerButton.textContent = "💾 Save Prayer";
+        }, 1400);
+      };
+
+      prayerText.addEventListener("input", () => {
+        clearTimeout(saveButtonTimer);
+        savePrayerButton.textContent = "💾 Save Prayer";
+        updateSavePrayerButton();
       });
+      prayerText.addEventListener("keydown", (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === "Enter") savePrayer();
+      });
+      savePrayerButton.addEventListener("click", savePrayer);
 
       document.getElementById("goal").addEventListener("change", (event) => {
         data.goal = Math.min(100, Math.max(1, Number(event.target.value) || 10));
@@ -1110,17 +1153,6 @@
           selectedDateKey = dateKey();
           render();
           showMessage("History erased.");
-        }
-      });
-
-      document.getElementById("copyButton").addEventListener("click", async () => {
-        const total = Object.values(data.days).reduce((sum, value) => sum + Number(value || 0), 0);
-        const text = `Stop & Pray: ${currentCount()} prayer stops today, ${calculateStreak()}-day goal streak, ${total} all time.`;
-        try {
-          await navigator.clipboard.writeText(text);
-          showMessage("Summary copied.");
-        } catch (_) {
-          prompt("Copy this summary:", text);
         }
       });
 
